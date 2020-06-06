@@ -2,7 +2,7 @@
 
 Standalone Product Key Memory module for augmenting Transformer models
 
-Usage
+## Usage
 
 ```python
 import torch
