@@ -8,6 +8,13 @@ def expand_dim(t, dim, k, unsqueeze = False):
     expand_shape[dim] = k
     return t.expand(*expand_shape)
 
+def fetch_pkm_value_parameters(module):
+    params = []
+    for m in module.modules():
+        if isinstance(m, PKM):
+            params.append(m.values)
+    return params
+
 class PKM(nn.Module):
     def __init__(self, dim, heads = 8, num_keys = 128, topk = 10, share_kv = False):
         super().__init__()

@@ -10,6 +10,8 @@ $ pip install product-key-memory
 
 ## Usage
 
+Replace the feedforwards in a Transformer with the following
+
 ```python
 import torch
 from product_key_memory import PKM
@@ -24,6 +26,22 @@ pkm = PKM(
 
 x = torch.randn(1, 1024, 512)
 values = pkm(x) # (1, 1024, 512)
+```
+
+## Learning Rates
+
+To give different learning rates to the value parameters of the product-key-memory network, use the following helper function.
+
+```python
+from torch.optim import Adam
+from product_key_memory import fetch_pkm_value_parameters
+
+pkm_parameters = fetch_pkm_value_parameters(model)
+
+optim = Adam([
+    {'params': model.parameters()},
+    {'params': pkm_parameters, 'lr': 1e-2}
+], lr=1e-3)
 ```
 
 ## Appreciation
