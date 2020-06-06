@@ -2,6 +2,12 @@
 
 Standalone Product Key Memory module for augmenting Transformer models
 
+## Install
+
+```bash
+$ pip install product-key-memory
+```
+
 ## Usage
 
 ```python
