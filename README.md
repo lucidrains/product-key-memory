@@ -20,6 +20,10 @@ x = torch.randn(1, 1024, 512)
 values = pkm(x) # (1, 1024, 512)
 ```
 
+## Appreciation
+
+Special thanks go to <a href="https://github.com/madisonmay">Madison May</a> for his <a href="https://www.pragmatic.ml/large-memory-layers-with-product-keys/">educational blog post</a>, which helped me understand this better.
+
 ## Citations
 
 ```bibtex
