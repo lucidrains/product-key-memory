@@ -1,14 +1,15 @@
 import torch
 from torch import nn
 
-def expand_dim(t, dim, k):
-    t = t.unsqueeze(dim)
+def expand_dim(t, dim, k, unsqueeze = False):
+    if unsqueeze:
+        t = t.unsqueeze(dim)
     expand_shape = [-1] * len(t.shape)
     expand_shape[dim] = k
     return t.expand(*expand_shape)
 
 class PKM(nn.Module):
-    def __init__(self, dim, heads = 8, num_keys = 128, topk = 10):
+    def __init__(self, dim, heads = 8, num_keys = 128, topk = 10, share_kv = False):
         super().__init__()
         assert (dim % heads == 0), 'dimension must be divisible by number of heads'
         self.topk = topk
@@ -19,15 +20,21 @@ class PKM(nn.Module):
         self.to_queries = nn.Linear(dim, dim * 2, bias = False)
         self.to_out = nn.Linear(dim, dim)
 
-        self.keys = nn.Parameter(torch.randn(heads, num_keys, 2, d_head))
-        self.values = nn.Parameter(torch.randn(heads, num_keys ** 2, d_head))
+        kv_heads = 1 if share_kv else heads
+        self.keys = nn.Parameter(torch.randn(kv_heads, num_keys, 2, d_head))
+        self.values = nn.Parameter(torch.randn(kv_heads, num_keys ** 2, d_head))
 
     def forward(self, x):
         b, t, e, h = *x.shape, self.heads
+        d_head = e // h
+
         queries = self.to_queries(x).chunk(2, dim=-1)
         queries = torch.stack(queries).reshape(2, b, t, h, -1)
 
-        dots = torch.einsum('pbthd,hnpd->bhtpn', queries, self.keys)
+        keys, values = map(lambda x: expand_dim(x, 0, h), (self.keys, self.values))
+
+
+        dots = torch.einsum('pbthd,hnpd->bhtpn', queries, keys)
         scores, indices = dots.topk(k=self.topk, dim=-1)
         scores, indices = map(lambda x: x.chunk(2, dim=2), (scores, indices))
 
@@ -48,9 +55,9 @@ class PKM(nn.Module):
 
         attn = final_topk.softmax(dim=-1)
 
-        values = self.values[None, :, None, :, :].expand(b, -1, t, -1, -1)
-        expanded_indices = expand_dim(value_indices, dim=4, k=values.shape[-1])
-        selected_values = values.gather(-2, expanded_indices)
+        expanded_values = values[None, :, None, :, :].expand(b, -1, t, -1, -1)
+        expanded_indices = expand_dim(value_indices, dim=4, k=d_head, unsqueeze=True)
+        selected_values = expanded_values.gather(-2, expanded_indices)
 
         out = (attn.unsqueeze(-1) * selected_values).sum(dim=-2)
         out = out.transpose(1, 2).reshape(b, t, -1)
