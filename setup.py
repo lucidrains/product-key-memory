@@ -3,11 +3,11 @@ from setuptools import setup, find_packages
 setup(
   name = 'product_key_memory',
   packages = find_packages(),
-  version = '0.1.2',
+  version = '0.1.3',
   license='MIT',
   description = 'Product Key Memory',
-  author = 'Phil Wang',
-  author_email = 'lucidrains@gmail.com',
+  author = 'Aran Komatsuzaki, Phil Wang',
+  author_email = 'aran1234321@gmail.com, lucidrains@gmail.com',
   url = 'https://github.com/lucidrains/product-key-memory',
   keywords = ['transformers', 'artificial intelligence'],
   install_requires=[
