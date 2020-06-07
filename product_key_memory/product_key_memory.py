@@ -67,7 +67,7 @@ class PKM(nn.Module):
 
         dots = torch.einsum('pbthd,hnpd->bthpn', queries, self.keys)
         scores, indices = dots.topk(k=self.topk, dim=-1)
-        scores, indices = map(lambda x: x.chunk(2, dim=2), (scores, indices))
+        scores, indices = map(lambda x: x.chunk(2, dim=3), (scores, indices))
 
         all_topk = self.topk ** 2
         shape = (b, t, h, all_topk)
