@@ -54,7 +54,7 @@ class PKM(nn.Module):
         self.query_dropout = nn.Dropout(query_dropout)
         self.value_dropout = nn.Dropout(value_dropout)
 
-    def forward(self, x):
+    def forward(self, x, **kwargs):
         b, t, e, h = *x.shape, self.heads
         x = self.input_dropout(x)
 
