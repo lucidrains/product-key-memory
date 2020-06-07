@@ -7,7 +7,7 @@ from product_key_memory.evonorm import EvoNorm1D
 def init_(t, dim = None):
     dim = dim if dim is not None else t.shape[-1]
     std = 1. / math.sqrt(dim)
-    return t.normal_(0, std)
+    return nn.init.normal_(t, mean=0, std=std)
 
 def expand_dim(t, dim, k, unsqueeze = False):
     if unsqueeze:
@@ -16,12 +16,16 @@ def expand_dim(t, dim, k, unsqueeze = False):
     expand_shape[dim] = k
     return t.expand(*expand_shape)
 
+def list_subtract(l, r):
+    return [el for el in l if el not in set(r)]
+
 def fetch_pkm_value_parameters(module):
     params = []
     for m in module.modules():
         if isinstance(m, PKM):
             params.append(m.values.weight)
-    return params
+    rest = list_subtract(module.parameters(), params)
+    return params, rest
 
 class MergeDims(nn.Module):
     def __init__(self, fn):
@@ -46,9 +50,10 @@ class PKM(nn.Module):
         self.to_queries = nn.Linear(dim, dim_query, bias = False)
         self.norm = MergeDims(nn.BatchNorm1d(dim_query)) if not use_evonorm else EvoNorm1D(dim_query)
 
-        keys = init_(torch.randn(heads, num_keys, 2, dim_head // 2))
-        self.keys = nn.Parameter(keys)
+        self.keys = nn.Parameter(torch.zeros(heads, num_keys, 2, dim_head // 2))
         self.values = nn.EmbeddingBag(num_keys ** 2, dim, mode='sum')
+        init_(self.keys)
+        init_(self.values.weight)
 
         self.input_dropout = nn.Dropout(input_dropout)
         self.query_dropout = nn.Dropout(query_dropout)

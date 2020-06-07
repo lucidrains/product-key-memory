@@ -40,10 +40,10 @@ from torch.optim import Adam
 from product_key_memory import fetch_pkm_value_parameters
 
 # this helper function, for your root model, finds all the PKM models and the embedding bag weight parameters
-pkm_parameters = fetch_pkm_value_parameters(model)
+pkm_parameters, other_parameters = fetch_pkm_value_parameters(model)
 
 optim = Adam([
-    {'params': model.parameters()},
+    {'params': other_parameters},
     {'params': pkm_parameters, 'lr': 1e-2}
 ], lr=1e-3)
 ```
