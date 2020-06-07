@@ -1,6 +1,13 @@
 import torch
+import math
 from torch import nn
 from product_key_memory.evonorm import EvoNorm1D
+
+
+def init_(t, dim = None):
+    dim = dim if dim is not None else t.shape[-1]
+    std = 1. / math.sqrt(dim)
+    return t.normal_(0, std)
 
 def expand_dim(t, dim, k, unsqueeze = False):
     if unsqueeze:
@@ -39,7 +46,8 @@ class PKM(nn.Module):
         self.norm = MergeDims(nn.BatchNorm1d(dim)) if not use_evonorm else EvoNorm1D(dim)
         self.to_queries = nn.Linear(dim, dim, bias = False)
 
-        self.keys = nn.Parameter(torch.randn(heads, num_keys, 2, d_head // 2))
+        keys = init_(torch.randn(heads, num_keys, 2, d_head // 2))
+        self.keys = nn.Parameter(keys)
         self.values = nn.EmbeddingBag(num_keys ** 2, dim, mode='sum')
 
         self.input_dropout = nn.Dropout(input_dropout)
