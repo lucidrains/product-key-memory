@@ -1,5 +1,7 @@
 ## Product Key Memory
 
+[![PyPI version](https://badge.fury.io/py/product-key-memory.svg)](https://badge.fury.io/py/product-key-memory)
+
 Standalone Product Key Memory module for augmenting Transformer models
 
 ## Install
