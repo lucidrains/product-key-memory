@@ -36,6 +36,7 @@ To give different learning rates to the value parameters of the product-key-memo
 from torch.optim import Adam
 from product_key_memory import fetch_pkm_value_parameters
 
+# this helper function, for your root model, finds all the PKM models and the embedding bag weight parameters
 pkm_parameters = fetch_pkm_value_parameters(model)
 
 optim = Adam([
