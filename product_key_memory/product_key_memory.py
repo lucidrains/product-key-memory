@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+from product_key_memory.evonorm import EvoNorm1D
 
 def expand_dim(t, dim, k, unsqueeze = False):
     if unsqueeze:
@@ -15,8 +16,21 @@ def fetch_pkm_value_parameters(module):
             params.append(m.values.weight)
     return params
 
+class TransposeToFrom(nn.Module):
+    def __init__(self, transpose_dims, fn):
+        super().__init__()
+        self.fn = fn
+        self.transpose_dims = transpose_dims
+
+    def forward(self, x):
+        dims = self.transpose_dims
+        x = x.transpose(*dims)
+        x = self.fn(x)
+        x = x.transpose(*dims)
+        return x
+
 class PKM(nn.Module):
-    def __init__(self, dim, heads = 8, num_keys = 128, topk = 10, input_dropout = 0., query_dropout = 0., value_dropout = 0.):
+    def __init__(self, dim, heads = 8, num_keys = 128, topk = 10, input_dropout = 0., query_dropout = 0., value_dropout = 0., use_evonorm = False):
         super().__init__()
         assert (dim % heads == 0), 'dimension must be divisible by number of heads'
         self.topk = topk
@@ -24,7 +38,7 @@ class PKM(nn.Module):
         self.num_keys = num_keys
 
         d_head = dim // heads
-        self.batch_norm = nn.BatchNorm1d(dim)
+        self.norm = TransposeToFrom((1, 2), nn.BatchNorm1d(dim)) if not use_evonorm else EvoNorm1D(dim)
         self.to_queries = nn.Linear(dim, dim, bias = False)
 
         self.keys = nn.Parameter(torch.randn(heads, num_keys, 2, d_head // 2))
@@ -39,7 +53,7 @@ class PKM(nn.Module):
         x = self.input_dropout(x)
 
         queries = self.to_queries(x)
-        queries = self.batch_norm(queries.transpose(1, 2)).transpose(1, 2)
+        queries = self.norm(queries)
         queries = self.query_dropout(queries)
 
         queries = queries.chunk(2, dim=-1)
