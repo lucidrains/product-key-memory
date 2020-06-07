@@ -28,7 +28,8 @@ pkm = PKM(
 )
 
 x = torch.randn(1, 1024, 512)
-values = pkm(x) # (1, 1024, 512)
+mask = torch.ones((1, 1024)).bool()
+values = pkm(x, input_mask = mask) # (1, 1024, 512)
 ```
 
 ## Learning Rates

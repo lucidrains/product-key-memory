@@ -38,7 +38,7 @@ class EvoNorm1D(nn.Module):
         self.gamma = nn.Parameter(torch.ones(1, 1, dim))
         self.beta = nn.Parameter(torch.zeros(1, 1, dim))
 
-    def forward(self, x):
+    def forward(self, x, **kwargs):
         if self.non_linear:
             num = self.swish(x)
             return num / group_std(x, groups = self.groups, eps = self.eps) * self.gamma + self.beta

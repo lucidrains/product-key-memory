@@ -3,7 +3,6 @@ import math
 from torch import nn
 from product_key_memory.evonorm import EvoNorm1D
 
-
 def init_(t, dim = None):
     dim = dim if dim is not None else t.shape[-1]
     std = 1. / math.sqrt(dim)
@@ -27,16 +26,29 @@ def fetch_pkm_value_parameters(module):
     rest = list_subtract(module.parameters(), params)
     return params, rest
 
-class MergeDims(nn.Module):
+class MaskedBatchNorm1D(nn.Module):
     def __init__(self, fn):
         super().__init__()
         self.fn = fn
 
-    def forward(self, x):
+    def forward(self, x, mask = None):
+        b, t, d = x.shape
+        has_mask = mask is not None
+
+        if has_mask:
+            initial_x = x
+            mask = mask.unsqueeze(-1)
+            x = x.masked_select(mask)
+
         shape = x.shape
-        x = x.reshape(-1, shape[-1])
+        x = x.reshape(-1, d)
         x = self.fn(x)
-        return x.reshape(*shape)
+        x = x.reshape(*shape)
+
+        if has_mask:
+            x = initial_x.masked_scatter(mask, x)
+
+        return x
 
 class PKM(nn.Module):
     def __init__(self, dim, heads = 4, num_keys = 128, topk = 32, dim_head = 256, input_dropout = 0., query_dropout = 0., value_dropout = 0., use_evonorm = False):
@@ -48,7 +60,7 @@ class PKM(nn.Module):
 
         dim_query = dim_head * heads
         self.to_queries = nn.Linear(dim, dim_query, bias = False)
-        self.norm = MergeDims(nn.BatchNorm1d(dim_query)) if not use_evonorm else EvoNorm1D(dim_query)
+        self.norm = MaskedBatchNorm1D(nn.BatchNorm1d(dim_query)) if not use_evonorm else EvoNorm1D(dim_query)
 
         self.keys = nn.Parameter(torch.zeros(heads, num_keys, 2, dim_head // 2))
         self.values = nn.EmbeddingBag(num_keys ** 2, dim, mode='sum')
@@ -59,12 +71,12 @@ class PKM(nn.Module):
         self.query_dropout = nn.Dropout(query_dropout)
         self.value_dropout = nn.Dropout(value_dropout)
 
-    def forward(self, x, **kwargs):
+    def forward(self, x, input_mask = None, **kwargs):
         b, t, e, h = *x.shape, self.heads
         x = self.input_dropout(x)
 
         queries = self.to_queries(x)
-        queries = self.norm(queries)
+        queries = self.norm(queries, mask = input_mask)
         queries = self.query_dropout(queries)
 
         queries = queries.chunk(2, dim=-1)
