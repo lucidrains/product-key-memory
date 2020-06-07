@@ -21,7 +21,6 @@ pkm = PKM(
     heads = 8,
     num_keys = 512,       # number of subkeys, # values will be num_keys ^ 2
     topk = 10,            # the top number of subkeys to select
-    share_kv = False      # share key/values across heads
 )
 
 x = torch.randn(1, 1024, 512)

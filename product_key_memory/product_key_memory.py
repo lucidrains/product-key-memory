@@ -12,11 +12,11 @@ def fetch_pkm_value_parameters(module):
     params = []
     for m in module.modules():
         if isinstance(m, PKM):
-            params.append(m.values)
+            params.append(m.values.weight)
     return params
 
 class PKM(nn.Module):
-    def __init__(self, dim, heads = 8, num_keys = 128, topk = 10, share_kv = False):
+    def __init__(self, dim, heads = 8, num_keys = 128, topk = 10):
         super().__init__()
         assert (dim % heads == 0), 'dimension must be divisible by number of heads'
         self.topk = topk
@@ -24,28 +24,25 @@ class PKM(nn.Module):
         self.num_keys = num_keys
 
         d_head = dim // heads
-        self.to_queries = nn.Linear(dim, dim * 2, bias = False)
-        self.to_out = nn.Linear(dim, dim)
+        self.batch_norm = nn.BatchNorm1d(dim)
+        self.to_queries = nn.Linear(dim, dim, bias = False)
 
-        kv_heads = 1 if share_kv else heads
-        self.keys = nn.Parameter(torch.randn(kv_heads, num_keys, 2, d_head))
-        self.values = nn.Parameter(torch.randn(kv_heads, num_keys ** 2, d_head))
+        self.keys = nn.Parameter(torch.randn(heads, num_keys, 2, d_head // 2))
+        self.values = nn.EmbeddingBag(num_keys ** 2, dim, mode='sum')
 
     def forward(self, x):
         b, t, e, h = *x.shape, self.heads
-        d_head = e // h
-
-        queries = self.to_queries(x).chunk(2, dim=-1)
+        queries = self.to_queries(x)
+        queries = self.batch_norm(queries.transpose(1, 2)).transpose(1, 2)
+        queries = queries.chunk(2, dim=-1)
         queries = torch.stack(queries).reshape(2, b, t, h, -1)
 
-        keys, values = map(lambda x: expand_dim(x, 0, h), (self.keys, self.values))
-
-
-        dots = torch.einsum('pbthd,hnpd->bhtpn', queries, keys)
+        dots = torch.einsum('pbthd,hnpd->bthpn', queries, self.keys)
         scores, indices = dots.topk(k=self.topk, dim=-1)
         scores, indices = map(lambda x: x.chunk(2, dim=2), (scores, indices))
 
-        shape = (b, h, t, self.topk ** 2)
+        all_topk = self.topk ** 2
+        shape = (b, t, h, all_topk)
 
         all_scores = (
             scores[0][..., :, None] +
@@ -62,10 +59,7 @@ class PKM(nn.Module):
 
         attn = final_topk.softmax(dim=-1)
 
-        expanded_values = values[None, :, None, :, :].expand(b, -1, t, -1, -1)
-        expanded_indices = expand_dim(value_indices, dim=4, k=d_head, unsqueeze=True)
-        selected_values = expanded_values.gather(-2, expanded_indices)
+        value_indices, attn = map(lambda x: x.reshape(-1, self.topk * h), (value_indices, attn))
+        out = self.values(value_indices, per_sample_weights=attn)
+        return out.reshape(b, t, e)
 
-        out = (attn.unsqueeze(-1) * selected_values).sum(dim=-2)
-        out = out.transpose(1, 2).reshape(b, t, -1)
-        return self.to_out(out)
