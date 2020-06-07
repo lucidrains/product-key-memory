@@ -28,6 +28,7 @@ def group_std(x, groups = 32, eps = 1e-5):
 class EvoNorm1D(nn.Module):
     def __init__(self, dim, non_linear = True, eps = 1e-5, groups = 32):
         super().__init__()
+        assert (dim % groups == 0), f'dimension {dim} must be divisible by the number of groups {groups}'
         self.non_linear = non_linear
         self.swish = Swish()
 

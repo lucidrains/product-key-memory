@@ -35,18 +35,18 @@ class MergeDims(nn.Module):
         return x.reshape(*shape)
 
 class PKM(nn.Module):
-    def __init__(self, dim, heads = 4, num_keys = 128, topk = 32, input_dropout = 0., query_dropout = 0., value_dropout = 0., use_evonorm = False):
+    def __init__(self, dim, heads = 4, num_keys = 128, topk = 32, dim_head = 256, input_dropout = 0., query_dropout = 0., value_dropout = 0., use_evonorm = False):
         super().__init__()
         assert (dim % heads == 0), 'dimension must be divisible by number of heads'
         self.topk = topk
         self.heads = heads
         self.num_keys = num_keys
 
-        d_head = dim // heads
-        self.norm = MergeDims(nn.BatchNorm1d(dim)) if not use_evonorm else EvoNorm1D(dim)
-        self.to_queries = nn.Linear(dim, dim, bias = False)
+        dim_query = dim_head * heads
+        self.to_queries = nn.Linear(dim, dim_query, bias = False)
+        self.norm = MergeDims(nn.BatchNorm1d(dim_query)) if not use_evonorm else EvoNorm1D(dim_query)
 
-        keys = init_(torch.randn(heads, num_keys, 2, d_head // 2))
+        keys = init_(torch.randn(heads, num_keys, 2, dim_head // 2))
         self.keys = nn.Parameter(keys)
         self.values = nn.EmbeddingBag(num_keys ** 2, dim, mode='sum')
 
