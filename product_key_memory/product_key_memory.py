@@ -16,7 +16,7 @@ def fetch_pkm_value_parameters(module):
     return params
 
 class PKM(nn.Module):
-    def __init__(self, dim, heads = 8, num_keys = 128, topk = 10):
+    def __init__(self, dim, heads = 8, num_keys = 128, topk = 10, input_dropout = 0., query_dropout = 0., value_dropout = 0.):
         super().__init__()
         assert (dim % heads == 0), 'dimension must be divisible by number of heads'
         self.topk = topk
@@ -30,10 +30,18 @@ class PKM(nn.Module):
         self.keys = nn.Parameter(torch.randn(heads, num_keys, 2, d_head // 2))
         self.values = nn.EmbeddingBag(num_keys ** 2, dim, mode='sum')
 
+        self.input_dropout = nn.Dropout(input_dropout)
+        self.query_dropout = nn.Dropout(query_dropout)
+        self.value_dropout = nn.Dropout(value_dropout)
+
     def forward(self, x):
         b, t, e, h = *x.shape, self.heads
+        x = self.input_dropout(x)
+
         queries = self.to_queries(x)
         queries = self.batch_norm(queries.transpose(1, 2)).transpose(1, 2)
+        queries = self.query_dropout(queries)
+
         queries = queries.chunk(2, dim=-1)
         queries = torch.stack(queries).reshape(2, b, t, h, -1)
 
@@ -60,6 +68,8 @@ class PKM(nn.Module):
         attn = final_topk.softmax(dim=-1)
 
         value_indices, attn = map(lambda x: x.reshape(-1, self.topk * h), (value_indices, attn))
+
         out = self.values(value_indices, per_sample_weights=attn)
+        out = self.value_dropout(out)
         return out.reshape(b, t, e)
 
