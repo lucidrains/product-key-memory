@@ -16,18 +16,16 @@ def fetch_pkm_value_parameters(module):
             params.append(m.values.weight)
     return params
 
-class TransposeToFrom(nn.Module):
-    def __init__(self, transpose_dims, fn):
+class MergeDims(nn.Module):
+    def __init__(self, fn):
         super().__init__()
         self.fn = fn
-        self.transpose_dims = transpose_dims
 
     def forward(self, x):
-        dims = self.transpose_dims
-        x = x.transpose(*dims)
+        shape = x.shape
+        x = x.reshape(-1, shape[-1])
         x = self.fn(x)
-        x = x.transpose(*dims)
-        return x
+        return x.reshape(*shape)
 
 class PKM(nn.Module):
     def __init__(self, dim, heads = 8, num_keys = 128, topk = 10, input_dropout = 0., query_dropout = 0., value_dropout = 0., use_evonorm = False):
@@ -38,7 +36,7 @@ class PKM(nn.Module):
         self.num_keys = num_keys
 
         d_head = dim // heads
-        self.norm = TransposeToFrom((1, 2), nn.BatchNorm1d(dim)) if not use_evonorm else EvoNorm1D(dim)
+        self.norm = MergeDims(nn.BatchNorm1d(dim)) if not use_evonorm else EvoNorm1D(dim)
         self.to_queries = nn.Linear(dim, dim, bias = False)
 
         self.keys = nn.Parameter(torch.randn(heads, num_keys, 2, d_head // 2))
