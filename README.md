@@ -18,9 +18,9 @@ from product_key_memory import PKM
 
 pkm = PKM(
     dim = 512,
-    heads = 8,
-    num_keys = 512,       # number of subkeys, # values will be num_keys ^ 2
-    topk = 10,            # the top number of subkeys to select
+    heads = 4,
+    num_keys = 256,       # number of subkeys, # values will be num_keys ^ 2
+    topk = 32,            # the top number of subkeys to select
     use_evonorm = True    # usually PKM requires decent batch sizes with batchnorm to work well. this is an experimental feature using the new evonorm-s0 for batch-independent normalization
 )
 

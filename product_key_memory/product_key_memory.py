@@ -28,7 +28,7 @@ class MergeDims(nn.Module):
         return x.reshape(*shape)
 
 class PKM(nn.Module):
-    def __init__(self, dim, heads = 8, num_keys = 128, topk = 10, input_dropout = 0., query_dropout = 0., value_dropout = 0., use_evonorm = False):
+    def __init__(self, dim, heads = 4, num_keys = 256, topk = 32, input_dropout = 0., query_dropout = 0., value_dropout = 0., use_evonorm = False):
         super().__init__()
         assert (dim % heads == 0), 'dimension must be divisible by number of heads'
         self.topk = topk
