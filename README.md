@@ -64,3 +64,13 @@ Special thanks go to <a href="https://github.com/AranKomat">Aran</a> for encoura
     archivePrefix = {arXiv}
 }
 ```
+
+```bibtex
+@misc{liu2020evolving,
+    title   = {Evolving Normalization-Activation Layers},
+    author  = {Hanxiao Liu and Andrew Brock and Karen Simonyan and Quoc V. Le},
+    year    = {2020},
+    eprint  = {2004.02967},
+    archivePrefix = {arXiv}
+}
+```
