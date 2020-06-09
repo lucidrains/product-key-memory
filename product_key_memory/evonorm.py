@@ -19,17 +19,23 @@ class Swish(nn.Module):
     def forward(self, input_tensor):
         return SwishFn.apply(input_tensor)
 
-# calculating cumulative variance
+# calculating cumulative variance as described https://stackoverflow.com/a/58370053
 # expects tensor in the shape of (b, t, d), where 't' is the dimension to be cumulative
 def cum_var(x):
     shape, device = x.shape, x.device
     b, t, d = shape
-    x = x.reshape(b, t * d)
+    flattened = x.reshape(b, t * d)
 
-    x_cum, x2_cum = (x.cumsum(dim=1), (x ** 2).cumsum(dim=1))
-    denom = torch.arange(0, t * d, device = device)[None, :] + 1
-    cum_var = ((x2_cum - ((x_cum ** 2) / denom)) / denom).reshape(*shape)
-    return cum_var[:, :, -1].unsqueeze(-1)
+    x_cum, x2_cum = (flattened.cumsum(dim=1), (flattened ** 2).cumsum(dim=1))
+
+    x_cum = x_cum.reshape(b, t, d)[:, :, -1]
+    x2_cum = x2_cum.reshape(b, t, d)[:, :, -1]
+
+    denom = torch.arange(0, t * d, device = device)
+    denom = denom.reshape(t, d)[:, -1][None, :]
+
+    cum_var = ((x2_cum - ((x_cum ** 2) / (denom + 1))) / denom)
+    return cum_var[:, :, None].expand_as(x)
 
 def group_std(x, groups = 32, causal = False, eps = 1e-5):
     shape = x.shape
