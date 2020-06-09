@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 class SwishFn(torch.autograd.Function):
     @staticmethod
@@ -21,13 +22,13 @@ class Swish(nn.Module):
 # calculating cumulative variance
 # expects tensor in the shape of (b, t, d), where 't' is the dimension to be cumulative
 def cum_var(x):
-    shape = x.shape
+    shape, device = x.shape, x.device
     b, t, d = shape
     x = x.reshape(b, t * d)
 
     x_cum, x2_cum = (x.cumsum(dim=1), (x ** 2).cumsum(dim=1))
-    denom = torch.arange(0, t * d)[None, :]
-    cum_var = ((x2_cum - ((x_cum ** 2) / (denom + 1))) / (denom)).reshape(*shape)
+    denom = torch.arange(0, t * d, device = device)[None, :] + 1
+    cum_var = ((x2_cum - ((x_cum ** 2) / denom)) / denom).reshape(*shape)
     return cum_var[:, :, -1].unsqueeze(-1)
 
 def group_std(x, groups = 32, causal = False, eps = 1e-5):
