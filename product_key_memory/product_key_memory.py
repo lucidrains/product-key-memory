@@ -26,7 +26,7 @@ def fetch_pkm_value_parameters(module):
     rest = list_subtract(module.parameters(), params)
     return params, rest
 
-def fetch_parameters(module, pkm_learning_rate = 1e-2):
+def fetch_optimizer_parameters(module, pkm_learning_rate = 1e-2):
     pkm_params, rest = fetch_pkm_value_parameters(module)
     return [{'params': rest}, {'params': pkm_params, 'lr': pkm_learning_rate}]
 
@@ -55,7 +55,7 @@ class MaskedBatchNorm1D(nn.Module):
         return x
 
 class PKM(nn.Module):
-    def __init__(self, dim, heads = 4, num_keys = 128, topk = 32, dim_head = 256, input_dropout = 0., query_dropout = 0., value_dropout = 0., use_evonorm = False):
+    def __init__(self, dim, heads = 4, num_keys = 128, topk = 32, dim_head = 256, input_dropout = 0., query_dropout = 0., value_dropout = 0., use_evonorm = False, causal = False):
         super().__init__()
         assert (dim % heads == 0), 'dimension must be divisible by number of heads'
         self.topk = topk
@@ -64,7 +64,7 @@ class PKM(nn.Module):
 
         dim_query = dim_head * heads
         self.to_queries = nn.Linear(dim, dim_query, bias = False)
-        self.norm = MaskedBatchNorm1D(nn.BatchNorm1d(dim_query)) if not use_evonorm else EvoNorm1D(dim_query)
+        self.norm = MaskedBatchNorm1D(nn.BatchNorm1d(dim_query)) if not use_evonorm else EvoNorm1D(dim_query, causal = causal)
 
         self.keys = nn.Parameter(torch.zeros(heads, num_keys, 2, dim_head // 2))
         self.values = nn.EmbeddingBag(num_keys ** 2, dim, mode='sum')
