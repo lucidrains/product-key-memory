@@ -1,7 +1,6 @@
 import torch
 import math
 from torch import nn
-from product_key_memory.evonorm import EvoNorm1D
 
 def init_(t, dim = None):
     dim = dim if dim is not None else t.shape[-1]
@@ -55,7 +54,7 @@ class MaskedBatchNorm1D(nn.Module):
         return x
 
 class PKM(nn.Module):
-    def __init__(self, dim, heads = 4, num_keys = 128, topk = 32, dim_head = 256, input_dropout = 0., query_dropout = 0., value_dropout = 0., use_evonorm = False, causal = False):
+    def __init__(self, dim, heads = 4, num_keys = 128, topk = 32, dim_head = 256, input_dropout = 0., query_dropout = 0., value_dropout = 0.):
         super().__init__()
         assert (dim % heads == 0), 'dimension must be divisible by number of heads'
         self.topk = topk
@@ -64,7 +63,7 @@ class PKM(nn.Module):
 
         dim_query = dim_head * heads
         self.to_queries = nn.Linear(dim, dim_query, bias = False)
-        self.norm = MaskedBatchNorm1D(nn.BatchNorm1d(dim_query)) if not use_evonorm else EvoNorm1D(dim_query, causal = causal)
+        self.norm = MaskedBatchNorm1D(nn.BatchNorm1d(dim_query))
 
         self.keys = nn.Parameter(torch.zeros(heads, num_keys, 2, dim_head // 2))
         self.values = nn.EmbeddingBag(num_keys ** 2, dim, mode='sum')

@@ -23,8 +23,7 @@ pkm = PKM(
     heads = 4,
     dim_head = 256,       # keep at 256 for best results
     num_keys = 256,       # number of subkeys, # values will be num_keys ^ 2
-    topk = 32,            # the top number of subkeys to select
-    use_evonorm = True    # usually PKM requires decent batch sizes with batchnorm to work well. this is an experimental feature using the new evonorm-s0 for batch-independent normalization
+    topk = 32             # the top number of subkeys to select
 )
 
 x = torch.randn(1, 1024, 512)
