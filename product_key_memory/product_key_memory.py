@@ -26,6 +26,10 @@ def fetch_pkm_value_parameters(module):
     rest = list_subtract(module.parameters(), params)
     return params, rest
 
+def fetch_parameters(module, pkm_learning_rate = 1e-2):
+    pkm_params, rest = fetch_pkm_value_parameters(module)
+    return [{'params': rest}, {'params': pkm_params, 'lr': pkm_learning_rate}]
+
 class MaskedBatchNorm1D(nn.Module):
     def __init__(self, fn):
         super().__init__()

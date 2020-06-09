@@ -49,6 +49,16 @@ optim = Adam([
 ], lr=1e-3)
 ```
 
+Or, if product-key-memory parameters are the only other parameters you have a different learning rate for
+
+```python
+from torch.optim import Adam
+from product_key_memory import fetch_optimizer_parameters
+
+parameters = fetch_optimizer_parameters(model) # automatically creates array of parameter settings with learning rate set at 1e-2 for pkm values
+optim = Adam(parameters, lr=1e-3)
+```
+
 ## Appreciation
 
 Special thanks go to <a href="https://github.com/AranKomat">Aran</a> for encouraging me to look into this, and to <a href="https://github.com/madisonmay">Madison May</a> for his <a href="https://www.pragmatic.ml/large-memory-layers-with-product-keys/">educational blog post</a>, which helped me understand this better.
