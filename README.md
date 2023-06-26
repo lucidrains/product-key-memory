@@ -21,7 +21,7 @@ from product_key_memory import PKM
 pkm = PKM(
     dim = 512,
     heads = 4,
-    dim_head = 256,       # keep at 256 for best results
+    dim_head = 128,       # keep at 128 for best results
     num_keys = 256,       # number of subkeys, # values will be num_keys ^ 2
     topk = 32             # the top number of subkeys to select
 )
