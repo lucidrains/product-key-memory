@@ -71,8 +71,10 @@ class PKM(nn.Module):
         input_dropout = 0.,
         query_dropout = 0.,
         value_dropout = 0.,
-        use_layernorm = False,
-        pre_layernorm = False
+        attn_dropout = 0.,
+        use_layernorm = True,
+        pre_layernorm = False,
+
     ):
         super().__init__()
         self.topk = topk
@@ -103,6 +105,7 @@ class PKM(nn.Module):
         self.input_dropout = nn.Dropout(input_dropout)
         self.query_dropout = nn.Dropout(query_dropout)
         self.value_dropout = nn.Dropout(value_dropout)
+        self.attn_dropout = nn.Dropout(attn_dropout)
 
     def forward(
         self,
@@ -159,6 +162,7 @@ class PKM(nn.Module):
         # attention
 
         attn = final_topk.softmax(dim=-1)
+        attn = self.attn_dropout(attn)
 
         value_indices, attn = map(lambda t: rearrange(t, 'b t h k -> (b t) (h k)'), (value_indices, attn))
 
