@@ -71,7 +71,8 @@ class PKM(nn.Module):
         input_dropout = 0.,
         query_dropout = 0.,
         value_dropout = 0.,
-        use_layernorm = False
+        use_layernorm = False,
+        pre_layernorm = False
     ):
         super().__init__()
         self.topk = topk
@@ -80,6 +81,10 @@ class PKM(nn.Module):
 
         dim_query = dim_head * heads * 2
         self.to_queries = nn.Linear(dim, dim_query, bias = False)
+
+        # pre-layernorm pattern
+
+        self.pre_layernorm = nn.LayerNorm(dim) if pre_layernorm else nn.Identity()
 
         # batchnorm would break causality
 
@@ -106,6 +111,8 @@ class PKM(nn.Module):
         **kwargs
     ):
         b, t, h = *x.shape[:2], self.heads
+
+        x = self.pre_layernorm(x)
         x = self.input_dropout(x)
 
         queries = self.to_queries(x)

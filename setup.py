@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 setup(
     name = 'product_key_memory',
     packages = find_packages(),
-    version = '0.2.0',
+    version = '0.2.1',
     license='MIT',
     description = 'Product Key Memory',
     long_description_content_type = 'text/markdown',
