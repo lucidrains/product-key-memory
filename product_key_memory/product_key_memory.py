@@ -67,23 +67,31 @@ class PKM(nn.Module):
         heads = 4,
         num_keys = 128,
         topk = 32,
-        dim_head = 256,
+        dim_head = 128,
         input_dropout = 0.,
         query_dropout = 0.,
-        value_dropout = 0.
+        value_dropout = 0.,
+        use_layernorm = False
     ):
         super().__init__()
-        assert (dim % heads == 0), 'dimension must be divisible by number of heads'
         self.topk = topk
         self.heads = heads
         self.num_keys = num_keys
 
-        dim_query = dim_head * heads
+        dim_query = dim_head * heads * 2
         self.to_queries = nn.Linear(dim, dim_query, bias = False)
-        self.norm = MaskedBatchNorm1D(nn.BatchNorm1d(dim_query))
 
-        self.keys = nn.Parameter(torch.zeros(heads, num_keys, 2, dim_head // 2))
-        self.values = nn.EmbeddingBag(num_keys ** 2, dim, mode='sum')
+        # batchnorm would break causality
+
+        self.use_layernorm = use_layernorm
+
+        if use_layernorm:
+            self.norm = nn.LayerNorm(dim_head)
+        else:
+            self.norm = MaskedBatchNorm1D(nn.BatchNorm1d(dim_head))
+
+        self.keys = nn.Parameter(torch.zeros(heads, num_keys, 2, dim_head))
+        self.values = nn.EmbeddingBag(num_keys ** 2, dim, mode = 'sum')
         init_(self.keys)
         init_(self.values.weight)
 
@@ -101,12 +109,27 @@ class PKM(nn.Module):
         x = self.input_dropout(x)
 
         queries = self.to_queries(x)
-        queries = self.norm(queries, mask = input_mask)
+
+        # split out query heads
+
+        queries = rearrange(queries, 'b t (p h d) -> (b p h) t d', p = 2, h = h)
+
+        # norm and dropout queries
+
+        norm_kwargs = dict(mask = input_mask) if not self.use_layernorm else dict()
+        queries = self.norm(queries, **norm_kwargs)
         queries = self.query_dropout(queries)
 
-        queries = rearrange(queries, 'b t (p h d) -> p b t h d', p = 2, h = h)
+        # ready queries
+
+        queries = rearrange(queries, '(b p h) t d -> p b t h d', p = 2, h = h)
+
+        # similarity to keys
 
         dots = einsum('p b t h d, h n p d -> b t h p n', queries, self.keys)
+
+        # topk scores
+
         scores, indices = dots.topk(k = self.topk, dim = -1)
 
         (scores_x, scores_y), (indices_x, indices_y) = map(lambda t: t.chunk(2, dim = 3), (scores, indices))
@@ -126,9 +149,13 @@ class PKM(nn.Module):
         final_topk, final_indices = all_scores.topk(self.topk, dim=-1)
         value_indices = all_indices.gather(-1, final_indices)
 
+        # attention
+
         attn = final_topk.softmax(dim=-1)
 
         value_indices, attn = map(lambda t: rearrange(t, 'b t h k -> (b t) (h k)'), (value_indices, attn))
+
+        # aggregate
 
         out = self.values(value_indices, per_sample_weights=attn)
         out = self.value_dropout(out)
