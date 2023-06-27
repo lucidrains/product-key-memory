@@ -64,6 +64,13 @@ optim = Adam(parameters, lr=1e-3)
 
 Special thanks go to <a href="https://github.com/AranKomat">Aran</a> for encouraging me to look into this, and to <a href="https://github.com/madisonmay">Madison May</a> for his <a href="https://www.pragmatic.ml/large-memory-layers-with-product-keys/">educational blog post</a>, which helped me understand this better.
 
+## Todo
+
+- [ ] get caught up on latest literature on product key memories, if any
+- [ ] offer a way for smaller value dimensions + concat and linear combination of heads (like multi-head attention)
+- [ ] offer stochasticity with annealed gumbel noise. seen dramatic effects in vector-quantization setting
+- [ ] instead of additive scores, try multiplicative using coordinate descent routing
+
 ## Citations
 
 ```bibtex
