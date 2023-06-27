@@ -3,15 +3,19 @@ from setuptools import setup, find_packages
 setup(
     name = 'product_key_memory',
     packages = find_packages(),
-    version = '0.2.2',
-    license='MIT',
+    version = '0.2.4',
+    license = 'MIT',
     description = 'Product Key Memory',
     long_description_content_type = 'text/markdown',
     author = 'Aran Komatsuzaki, Phil Wang',
     author_email = 'aran1234321@gmail.com, lucidrains@gmail.com',
     url = 'https://github.com/lucidrains/product-key-memory',
-    keywords = ['transformers', 'artificial intelligence'],
+    keywords = [
+        'transformers',
+        'artificial intelligence'
+    ],
     install_requires=[
+        'colt5-attention>=0.10.14',
         'einops>=0.6',
         'torch'
     ],
