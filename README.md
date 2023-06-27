@@ -1,3 +1,5 @@
+<img src="./pkm.png" width="400px"></img>
+
 ## Product Key Memory
 
 [![PyPI version](https://badge.fury.io/py/product-key-memory.svg)](https://badge.fury.io/py/product-key-memory)
