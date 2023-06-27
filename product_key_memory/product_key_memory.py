@@ -4,6 +4,8 @@ from torch import nn, einsum
 
 from einops import rearrange
 
+from colt5_attention import topk as differentiable_topk
+
 # helper functions
 
 def exists(val):
@@ -74,7 +76,7 @@ class PKM(nn.Module):
         attn_dropout = 0.,
         use_layernorm = True,
         pre_layernorm = False,
-
+        differentiable_topk = False
     ):
         super().__init__()
         self.topk = topk
@@ -106,6 +108,10 @@ class PKM(nn.Module):
         self.query_dropout = nn.Dropout(query_dropout)
         self.value_dropout = nn.Dropout(value_dropout)
         self.attn_dropout = nn.Dropout(attn_dropout)
+
+        # use a differentiable topk, based on coordinate descent
+
+        self.differentiable_topk = differentiable_topk
 
     def forward(
         self,
@@ -140,7 +146,12 @@ class PKM(nn.Module):
 
         # topk scores
 
-        scores, indices = dots.topk(k = self.topk, dim = -1)
+        if self.differentiable_topk:
+            scores, indices, *_ = differentiable_topk(dots, k = self.topk)
+        else:
+            scores, indices = dots.topk(k = self.topk, dim = -1)
+
+        # scores are factorized
 
         (scores_x, scores_y), (indices_x, indices_y) = map(lambda t: t.chunk(2, dim = 3), (scores, indices))
 
