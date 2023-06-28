@@ -66,9 +66,10 @@ Special thanks go to <a href="https://github.com/AranKomat">Aran</a> for encoura
 
 ## Todo
 
+- [x] offer stochasticity with annealed gumbel noise. seen dramatic effects in vector-quantization setting
+
 - [ ] get caught up on latest literature on product key memories, if any
 - [ ] offer a way for smaller value dimensions + concat and linear combination of heads (like multi-head attention)
-- [ ] offer stochasticity with annealed gumbel noise. seen dramatic effects in vector-quantization setting
 - [ ] instead of additive scores, try multiplicative using coordinate descent routing
 
 ## Citations
