@@ -155,7 +155,7 @@ class PKM(nn.Module):
         # gumbel noise
 
         if gumbel_noise_scale > 0.:
-            dots = dots + gumbel_noise(dots)
+            dots = dots + gumbel_noise(dots) * gumbel_noise_scale
 
         # topk scores
 
