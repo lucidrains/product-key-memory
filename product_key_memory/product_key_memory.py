@@ -14,6 +14,13 @@ def exists(val):
 def default(val, d):
     return val if exists(val) else d
 
+def log(t, eps = 1e-20):
+    return torch.log(t.clamp(min = eps))
+
+def gumbel_noise(t):
+    noise = torch.zeros_like(t).uniform_(0, 1)
+    return -log(-log(noise))
+
 # init
 
 def init_(t, dim = None):
@@ -117,6 +124,7 @@ class PKM(nn.Module):
         self,
         x,
         input_mask = None,
+        gumbel_noise_scale = 0.,
         **kwargs
     ):
         b, t, h = *x.shape[:2], self.heads
@@ -143,6 +151,11 @@ class PKM(nn.Module):
         # similarity to keys
 
         dots = einsum('p b t h d, h n p d -> b t h p n', queries, self.keys)
+
+        # gumbel noise
+
+        if gumbel_noise_scale > 0.:
+            dots = dots + gumbel_noise(dots)
 
         # topk scores
 
