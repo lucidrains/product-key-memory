@@ -3,6 +3,7 @@ import torch
 from torch import nn, einsum
 
 from einops import rearrange
+from einops.layers.torch import Rearrange, Reduce
 
 from colt5_attention import topk as coor_descent_topk
 
@@ -83,7 +84,8 @@ class PKM(nn.Module):
         attn_dropout = 0.,
         use_layernorm = True,
         pre_layernorm = False,
-        differentiable_topk = False
+        differentiable_topk = False,
+        concat_values_and_combine = False
     ):
         super().__init__()
         self.topk = topk
@@ -106,10 +108,32 @@ class PKM(nn.Module):
         else:
             self.norm = MaskedBatchNorm1D(nn.BatchNorm1d(dim_head))
 
+        # keys
+
         self.keys = nn.Parameter(torch.zeros(heads, num_keys, 2, dim_head))
-        self.values = nn.EmbeddingBag(num_keys ** 2, dim, mode = 'sum')
         init_(self.keys)
-        init_(self.values.weight)
+
+        # values
+
+        self.concat_values_and_combine = concat_values_and_combine
+
+        if concat_values_and_combine:
+            values = nn.Embedding(num_keys ** 2, dim_head)
+
+            self.values = nn.Sequential(
+                values,
+                Reduce('b (h k) d -> b h d', 'sum', h = heads),
+                Rearrange('b n d -> b (n d)'),
+                nn.Linear(dim_head * heads, dim, bias = False)
+            )
+        else:
+            values = nn.EmbeddingBag(num_keys ** 2, dim, mode = 'sum')
+            self.values = values
+
+
+        init_(values.weight)
+
+        # dropouts
 
         self.input_dropout = nn.Dropout(input_dropout)
         self.query_dropout = nn.Dropout(query_dropout)
@@ -192,7 +216,10 @@ class PKM(nn.Module):
 
         # aggregate
 
-        out = self.values(value_indices, per_sample_weights=attn)
-        out = self.value_dropout(out)
+        if self.concat_values_and_combine:
+            out = self.values(value_indices)
+        else:
+            out = self.values(value_indices, per_sample_weights = attn)
 
+        out = self.value_dropout(out)
         return rearrange(out, '(b t) d -> b t d', b = b)
