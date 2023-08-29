@@ -85,7 +85,8 @@ class PKM(nn.Module):
         use_layernorm = True,
         pre_layernorm = False,
         differentiable_topk = False,
-        concat_values_and_combine = False
+        concat_values_and_combine = False,
+        norm_output = False
     ):
         super().__init__()
         self.topk = topk
@@ -143,6 +144,11 @@ class PKM(nn.Module):
         # use a differentiable topk, based on coordinate descent
 
         self.differentiable_topk = differentiable_topk
+
+        # https://arxiv.org/abs/2302.06461
+        # claims to boost performance of softmax key / value networks by simply layernorming the output
+
+        self.output_norm = nn.LayerNorm(dim) if norm_output else nn.Identity()
 
     def forward(
         self,
@@ -222,4 +228,9 @@ class PKM(nn.Module):
             out = self.values(value_indices, per_sample_weights = attn)
 
         out = self.value_dropout(out)
+
+        # maybe layernorm the output
+
+        out = self.output_norm(out)
+
         return rearrange(out, '(b t) d -> b t d', b = b)

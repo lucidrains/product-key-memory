@@ -93,3 +93,15 @@ Special thanks go to <a href="https://github.com/AranKomat">Aran</a> for encoura
     archivePrefix = {arXiv}
 }
 ```
+
+```bibtex
+@article{Shen2023ASO,
+    title   = {A Study on ReLU and Softmax in Transformer},
+    author  = {Kai Shen and Junliang Guo and Xuejiao Tan and Siliang Tang and Rui Wang and Jiang Bian},
+    journal = {ArXiv},
+    year    = {2023},
+    volume  = {abs/2302.06461},
+    url     = {https://api.semanticscholar.org/CorpusID:256827573}
+}
+```
+
