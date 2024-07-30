@@ -86,7 +86,8 @@ class PKM(nn.Module):
         pre_layernorm = False,
         differentiable_topk = False,
         concat_values_and_combine = False,
-        norm_output = False
+        norm_output = False,
+        non_competitive_gates = False # Csordas et al. claims non-competitive gates work even better
     ):
         super().__init__()
         self.topk = topk
@@ -140,6 +141,10 @@ class PKM(nn.Module):
         self.query_dropout = nn.Dropout(query_dropout)
         self.value_dropout = nn.Dropout(value_dropout)
         self.attn_dropout = nn.Dropout(attn_dropout)
+
+        # non competitive gates
+
+        self.gate_activation = nn.Softmax(dim = -1) if not non_competitive_gates else nn.ReLU()
 
         # use a differentiable topk, based on coordinate descent
 
@@ -215,7 +220,7 @@ class PKM(nn.Module):
 
         # attention
 
-        attn = final_topk.softmax(dim=-1)
+        attn = self.gate_activation(final_topk)
         attn = self.attn_dropout(attn)
 
         value_indices, attn = map(lambda t: rearrange(t, 'b t h k -> (b t) (h k)'), (value_indices, attn))
