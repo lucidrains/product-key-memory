@@ -119,21 +119,24 @@ class PKM(nn.Module):
 
         self.concat_values_and_combine = concat_values_and_combine
 
-        if concat_values_and_combine:
-            values = nn.Embedding(num_keys ** 2, dim_head)
+        num_memories = num_keys ** 2
 
-            self.values = nn.Sequential(
-                values,
+        self.num_memories = num_memories
+        self.maybe_concat_combine = nn.Identity()
+
+        if concat_values_and_combine:
+            values = nn.Embedding(num_memories, dim_head)
+
+            self.maybe_concat_combine = nn.Sequential(
                 Reduce('b (h k) d -> b h d', 'sum', h = heads),
                 Rearrange('b n d -> b (n d)'),
                 nn.Linear(dim_head * heads, dim, bias = False)
             )
         else:
-            values = nn.EmbeddingBag(num_keys ** 2, dim, mode = 'sum')
-            self.values = values
-
+            values = nn.EmbeddingBag(num_memories, dim, mode = 'sum')
 
         init_(values.weight)
+        self.values = values
 
         # dropouts
 
@@ -159,6 +162,7 @@ class PKM(nn.Module):
         self,
         x,
         input_mask = None,
+        mem_trainable_mask = None,  # bool[num_mems]
         gumbel_noise_scale = 0.,
         **kwargs
     ):
@@ -228,9 +232,28 @@ class PKM(nn.Module):
         # aggregate
 
         if self.concat_values_and_combine:
-            out = self.values(value_indices)
+            mems = self.values(value_indices)
         else:
-            out = self.values(value_indices, per_sample_weights = attn)
+            mems = self.values(value_indices, per_sample_weights = attn)
+
+        # maybe sparse finetune memories with a mask
+
+        if exists(mem_trainable_mask):
+            assert len(mem_trainable_mask) == self.num_memories
+            # https://openreview.net/forum?id=LGo7U1m24L
+
+            mask_at_indices = mem_trainable_mask[value_indices]
+            mask_at_indices = rearrange(mask_at_indices, '... -> ... 1')
+
+            masked_mems = mems * mask_at_indices
+
+            mems = mems.detach() + masked_mems - masked_mems.detach()
+
+        # maybe concat combine heads
+
+        out = self.maybe_concat_combine(mems)
+
+        # dropout
 
         out = self.value_dropout(out)
 

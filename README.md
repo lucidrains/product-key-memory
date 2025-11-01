@@ -115,3 +115,14 @@ Special thanks go to <a href="https://github.com/AranKomat">Aran</a> for encoura
     url     = {https://api.semanticscholar.org/CorpusID:264172384}
 }
 ```
+
+```bibtex
+@inproceedings{anonymous2025continual,
+    title   = {Continual Learning via Sparse Memory Finetuning},
+    author  = {Anonymous},
+    booktitle = {Submitted to The Fourteenth International Conference on Learning Representations},
+    year    = {2025},
+    url     = {https://openreview.net/forum?id=LGo7U1m24L},
+    note    = {under review}
+}
+```

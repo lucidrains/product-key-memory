@@ -1,0 +1,40 @@
+[project]
+name = "product_key_memory"
+version = "0.3.0"
+description = "Product Key Memory"
+readme = "README.md"
+requires-python = ">= 3.6"
+license = { text = "MIT" }
+keywords = [
+    'transformers',
+    'artificial intelligence',
+]
+authors = [
+    { name = "Aran Komatsuzaki", email = "aran1234321@gmail.com" },
+    { name = "Phil Wang", email = "lucidrains@gmail.com" },
+]
+classifiers = [
+    'Development Status :: 4 - Beta',
+    'Intended Audience :: Developers',
+    'Topic :: Scientific/Engineering :: Artificial Intelligence',
+    'License :: OSI Approved :: MIT License',
+    'Programming Language :: Python :: 3.6',
+]
+dependencies = [
+    'colt5-attention>=0.10.14',
+    'einops>=0.6',
+    'torch',
+]
+
+[project.urls]
+Repository = "https://github.com/lucidrains/product-key-memory"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["product_key_memory"]
